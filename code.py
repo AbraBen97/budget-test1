@@ -361,7 +361,7 @@ def add_expense_page():
     
     col1, col2 = st.columns(2)
     
-T    with col1:
+    with col1:
         category = st.selectbox("🏷️ Catégorie", get_categories())
         amount = st.number_input("💰 Montant", min_value=0, step=100)
     
