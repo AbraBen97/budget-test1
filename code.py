@@ -361,7 +361,7 @@ def add_expense_page():
     
     col1, col2 = st.columns(2)
     
-    with col1:
+T    with col1:
         category = st.selectbox("🏷️ Catégorie", get_categories())
         amount = st.number_input("💰 Montant", min_value=0, step=100)
     
@@ -508,6 +508,23 @@ def monthly_tracking_page():
     expenses = month_data.get('expenses', {})
     
     st.markdown(f"### 📅 Suivi pour {month_name}")
+    
+    # Vérification des dépassements de budget
+    overbudget_categories = []
+    for category in get_categories():
+        budgeted = budget.get(category, 0)
+        spent = expenses.get(category, 0)
+        if budgeted > 0 and spent > budgeted:
+            overbudget_categories.append(category)
+    
+    # Affichage de l'alerte si dépassement
+    if overbudget_categories:
+        categories_str = ", ".join(overbudget_categories)
+        st.markdown(f"""
+        <div class="danger-alert">
+            🚨 <strong>Attention :</strong> Le budget a été dépassé pour les catégories suivantes : {categories_str}.
+        </div>
+        """, unsafe_allow_html=True)
     
     # Tableau de suivi
     tracking_data = []
