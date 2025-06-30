@@ -6,10 +6,9 @@ from datetime import datetime, date
 import json
 import hashlib
 from pathlib import Path
-from PIL import Image, ImageDraw
 
 st.set_page_config(
-    page_title="💰 Mon Budget Épique",
+    page_title="💰 Mon Budget Personnel",
     page_icon="💰",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -39,6 +38,7 @@ st.markdown("""
         text-align: center;
         margin-bottom: 2rem;
     }
+    
     .metric-card {
         background: white;
         padding: 1.5rem;
@@ -47,6 +47,7 @@ st.markdown("""
         border-left: 4px solid #667eea;
         margin: 1rem 0;
     }
+    
     .budget-card {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         padding: 1.5rem;
@@ -54,12 +55,14 @@ st.markdown("""
         margin: 1rem 0;
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
+    
     .expense-form {
         background: #f8f9ff;
         padding: 2rem;
         border-radius: 15px;
         border: 2px solid #e3e8ff;
     }
+    
     .success-alert {
         background: #d4edda;
         color: #155724;
@@ -68,6 +71,7 @@ st.markdown("""
         border-left: 4px solid #28a745;
         margin: 1rem 0;
     }
+    
     .warning-alert {
         background: #fff3cd;
         color: #856404;
@@ -76,6 +80,7 @@ st.markdown("""
         border-left: 4px solid #ffc107;
         margin: 1rem 0;
     }
+    
     .danger-alert {
         background: #f8d7da;
         color: #721c24;
@@ -83,18 +88,6 @@ st.markdown("""
         border-radius: 8px;
         border-left: 4px solid #dc3545;
         margin: 1rem 0;
-    }
-    .treasure-chest {
-        background: url('https://cdn.pixabay.com/photo/2016/04/01/10/59/treasure-1299587_1280.png');
-        background-size: cover;
-        padding: 2rem;
-        border-radius: 15px;
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -134,11 +127,7 @@ class BudgetManager:
         self.users[username] = self.hash_password(password)
         self.data[username] = {
             'months': {},
-            'savings': 0,
-            'achievements': {},
-            'avatar': 'Chevalier',
-            'points': 0,
-            'theme': 'Clair'
+            'savings': 0
         }
         self.save_data()
         return True
@@ -149,37 +138,19 @@ class BudgetManager:
         return self.users[username] == self.hash_password(password)
     
     def get_user_data(self, username):
-        default_data = {
-            'months': {},
-            'savings': 0,
-            'achievements': {},
-            'avatar': 'Chevalier',
-            'points': 0,
-            'theme': 'Clair'
-        }
-        user_data = self.data.get(username, default_data)
-        # Ensure all required fields are present
-        for key, value in default_data.items():
-            if key not in user_data:
-                user_data[key] = value
-        self.data[username] = user_data
-        self.save_data()
-        return user_data
+        return self.data.get(username, {'months': {}, 'savings': 0})
     
     def update_user_data(self, username, data):
         self.data[username] = data
         self.save_data()
 
 def login_page():
-    st.markdown('<div class="main-header"><h1>💰 Mon Budget Épique</h1><p>Devenez le héros de vos finances !</p></div>', unsafe_allow_html=True)
-    
-    # Afficher une image statique
-    st.image("https://cdn.pixabay.com/photo/2016/04/01/10/59/treasure-1299587_1280.png", width=200)
+    st.markdown('<div class="main-header"><h1>💰 Mon Budget Personnel</h1><p>Gérez vos finances en toute simplicité</p></div>', unsafe_allow_html=True)
     
     tab1, tab2 = st.tabs(["🔐 Connexion", "📝 Inscription"])
     
     with tab1:
-        st.markdown("### Connectez-vous à votre aventure financière")
+        st.markdown("### Connectez-vous à votre compte")
         username = st.text_input("👤 Nom d'utilisateur", key="login_user")
         password = st.text_input("🔒 Mot de passe", type="password", key="login_pass")
         
@@ -187,13 +158,13 @@ def login_page():
             if budget_manager.authenticate(username, password):
                 st.session_state.logged_in = True
                 st.session_state.username = username
-                st.success("✅ Bienvenue, héros financier !")
+                st.success("✅ Connexion réussie!")
                 st.rerun()
             else:
                 st.error("❌ Nom d'utilisateur ou mot de passe incorrect")
     
     with tab2:
-        st.markdown("### Commencez votre quête financière")
+        st.markdown("### Créer un nouveau compte")
         new_username = st.text_input("👤 Nom d'utilisateur", key="reg_user")
         new_password = st.text_input("🔒 Mot de passe", type="password", key="reg_pass")
         confirm_password = st.text_input("🔒 Confirmer le mot de passe", type="password", key="reg_confirm")
@@ -204,14 +175,12 @@ def login_page():
             elif len(new_password) < 4:
                 st.error("❌ Le mot de passe doit contenir au moins 4 caractères")
             elif budget_manager.register_user(new_username, new_password):
-                st.success("✅ Compte créé ! Entrez dans la légende !")
+                st.success("✅ Compte créé avec succès! Vous pouvez maintenant vous connecter.")
             else:
                 st.error("❌ Ce nom d'utilisateur existe déjà")
 
 def sidebar_navigation():
-    user_data = budget_manager.get_user_data(st.session_state.username)
-    st.sidebar.markdown(f"### 👋 {user_data['avatar']} {st.session_state.username}")
-    st.sidebar.markdown(f"🌟 Pièces d'Or: {user_data['points']}")
+    st.sidebar.markdown(f"### 👋 Bonjour, {st.session_state.username}!")
     
     if st.sidebar.button("🚪 Déconnexion"):
         st.session_state.logged_in = False
@@ -227,9 +196,6 @@ def sidebar_navigation():
         "💰 Gérer les entrées": "manage_income",
         "📈 Suivi du mois": "monthly_tracking",
         "📚 Historique": "history",
-        "⚔️ Quêtes": "quests",
-        "🧙‍♂️ Conseiller Financier": "advisor",
-        "🏫 Académie Financière": "academy",
         "⚙️ Paramètres": "settings"
     }
     
@@ -242,169 +208,94 @@ def get_current_month_key():
 def get_categories():
     return ["Transport", "Nourriture", "Factures", "Santé", "Divers"]
 
-def update_achievements(username, user_data):
-    achievements = user_data.get('achievements', {})
-    savings = user_data.get('savings', 0)
-    months = user_data.get('months', {})
-    
-    if savings >= 100000 and 'savings_master' not in achievements:
-        achievements['savings_master'] = {'name': 'Maître des Économies', 'date': datetime.now().isoformat()}
-        user_data['points'] = user_data.get('points', 0) + 100
-        st.balloons()
-        st.markdown('<div class="success-alert">🎉 Badge débloqué : Maître des Économies ! +100 Pièces d’Or</div>', unsafe_allow_html=True)
-    
-    if len(months) >= 3 and 'loyal_hero' not in achievements:
-        achievements['loyal_hero'] = {'name': 'Héros Fidèle', 'date': datetime.now().isoformat()}
-        user_data['points'] = user_data.get('points', 0) + 50
-        st.balloons()
-        st.markdown('<div class="success-alert">🎉 Badge débloqué : Héros Fidèle ! +50 Pièces d’Or</div>', unsafe_allow_html=True)
-    
-    user_data['achievements'] = achievements
-    budget_manager.update_user_data(username, user_data)
-
-def apply_theme(theme):
-    if theme == "Sombre":
-        st.markdown("""
-        <style>
-            .stApp { background-color: #1a1a1a; color: #ffffff; }
-            .metric-card { background: #2c2c2c; border-left: 4px solid #764ba2; }
-            .budget-card { background: linear-gradient(135deg, #2c2c2c 0%, #4a4a4a 100%); }
-        </style>
-        """, unsafe_allow_html=True)
-    elif theme == "Fantasy":
-        st.markdown("""
-        <style>
-            .stApp { background: url('https://cdn.pixabay.com/photo/2016/04/01/10/59/fantasy-1299587_1280.png'); background-size: cover; }
-            .metric-card { background: rgba(255,255,255,0.8); border-left: 4px solid #d4a017; }
-            .budget-card { background: rgba(200,200,255,0.9); }
-        </style>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <style>
-            .stApp { background-color: #ffffff; color: #000000; }
-        </style>
-        """, unsafe_allow_html=True)
-
 def dashboard_page():
-    try:
-        user_data = budget_manager.get_user_data(st.session_state.username)
-        apply_theme(user_data.get('theme', 'Clair'))
-        st.markdown('<div class="main-header"><h1>📊 Tableau de Bord Épique</h1></div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header"><h1>📊 Tableau de bord</h1></div>', unsafe_allow_html=True)
+    
+    user_data = budget_manager.get_user_data(st.session_state.username)
+    current_month = get_current_month_key()
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown("""
+        <div class="metric-card">
+            <h3 style="color: #667eea; margin: 0;">💰 Petit Coffre</h3>
+            <h2 style="margin: 0;">{:,.0f} FCFA</h2>
+        </div>
+        """.format(user_data.get('savings', 0)), unsafe_allow_html=True)
+    
+    if current_month in user_data.get('months', {}):
+        month_data = user_data['months'][current_month]
+        total_budget = sum(month_data.get('budget', {}).values())
+        total_spent = sum(month_data.get('expenses', {}).values())
         
-        update_achievements(st.session_state.username, user_data)
-        current_month = get_current_month_key()
+        with col2:
+            st.markdown("""
+            <div class="metric-card">
+                <h3 style="color: #28a745; margin: 0;">📈 Budget Total</h3>
+                <h2 style="margin: 0;">{:,.0f} FCFA</h2>
+            </div>
+            """.format(total_budget), unsafe_allow_html=True)
         
-        col1, col2, col3, col4 = st.columns(4)
+        with col3:
+            st.markdown("""
+            <div class="metric-card">
+                <h3 style="color: #ffc107; margin: 0;">💸 Dépenses</h3>
+                <h2 style="margin: 0;">{:,.0f} FCFA</h2>
+            </div>
+            """.format(total_spent), unsafe_allow_html=True)
+        
+        with col4:
+            remaining = total_budget - total_spent
+            color = "#28a745" if remaining >= 0 else "#dc3545"
+            st.markdown("""
+            <div class="metric-card">
+                <h3 style="color: {}; margin: 0;">💎 Reste</h3>
+                <h2 style="margin: 0; color: {}">{:,.0f} FCFA</h2>
+            </div>
+            """.format(color, color, remaining), unsafe_allow_html=True)
+        
+        # Graphiques
+        col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("""
-            <div class="treasure-chest">
-                <h3 style="color: #d4a017; margin: 0;">💰 Petit Coffre</h3>
-                <h2 style="margin: 0; color: white;">{:,.0f} FCFA</h2>
-            </div>
-            """.format(user_data.get('savings', 0)), unsafe_allow_html=True)
+            if month_data.get('budget'):
+                fig = px.pie(
+                    values=list(month_data['budget'].values()),
+                    names=list(month_data['budget'].keys()),
+                    title="Répartition du Budget",
+                    color_discrete_sequence=px.colors.qualitative.Set3
+                )
+                fig.update_layout(showlegend=True, height=400)
+                st.plotly_chart(fig, use_container_width=True)
         
-        if current_month in user_data.get('months', {}):
-            month_data = user_data['months'][current_month]
-            total_budget = sum(month_data.get('budget', {}).values())
-            total_spent = sum(month_data.get('expenses', {}).values())
-            
-            with col2:
-                st.markdown("""
-                <div class="metric-card">
-                    <h3 style="color: #28a745; margin: 0;">📈 Budget Total</h3>
-                    <h2 style="margin: 0;">{:,.0f} FCFA</h2>
-                </div>
-                """.format(total_budget), unsafe_allow_html=True)
-            
-            with col3:
-                st.markdown("""
-                <div class="metric-card">
-                    <h3 style="color: #ffc107; margin: 0;">💸 Dépenses</h3>
-                    <h2 style="margin: 0;">{:,.0f} FCFA</h2>
-                </div>
-                """.format(total_spent), unsafe_allow_html=True)
-            
-            with col4:
-                remaining = total_budget - total_spent
-                color = "#28a745" if remaining >= 0 else "#dc3545"
-                st.markdown("""
-                <div class="metric-card">
-                    <h3 style="color: {}; margin: 0;">💎 Reste</h3>
-                    <h2 style="margin: 0; color: {}">{:,.0f} FCFA</h2>
-                </div>
-                """.format(color, color, remaining), unsafe_allow_html=True)
-            
-            # Graphiques
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if month_data.get('budget'):
-                    fig = go.Figure(data=[
-                        go.Scatter3d(
-                            x=list(month_data['budget'].keys()),
-                            y=[datetime.now().month] * len(month_data['budget']),
-                            z=list(month_data['budget'].values()),
-                            mode='markers+text',
-                            marker=dict(size=12, color=list(month_data['budget'].values()), colorscale='Viridis'),
-                            text=list(month_data['budget'].keys())
-                        )
-                    ])
-                    fig.update_layout(
-                        title="🌍 Budget 3D",
-                        scene=dict(xaxis_title="Catégorie", yaxis_title="Mois", zaxis_title="Montant (FCFA)"),
-                        height=400
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            with col2:
-                if month_data.get('expenses'):
-                    fig = px.bar(
-                        x=list(month_data['expenses'].keys()),
-                        y=list(month_data['expenses'].values()),
-                        title="Dépenses par Catégorie",
-                        color=list(month_data['expenses'].values()),
-                        color_continuous_scale="RdYlBu_r"
-                    )
-                    fig.update_layout(showlegend=False, height=400)
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            # Conseiller financier
-            st.markdown("### 🧙‍♂️ Conseils du Sage Financier")
-            for category in month_data.get('expenses', {}):
-                if category in month_data.get('budget', {}) and month_data['expenses'][category] / month_data['budget'][category] > 0.8:
-                    st.markdown(f'<div class="warning-alert">⚠️ Attention à vos dépenses en {category} ! Essayez de cuisiner à la maison ou d’acheter en gros.</div>', unsafe_allow_html=True)
-                    break
-            else:
-                st.markdown('<div class="success-alert">👍 Vous gérez bien votre budget ! Continuez ainsi !</div>', unsafe_allow_html=True)
-            
-            # Narration financière
-            st.markdown(f"""
-            <div class="budget-card">
-                <h3>📜 Votre Légende Financière</h3>
-                <p>Chapitre {len(user_data.get('months', {}))}: <strong>La Quête du Petit Coffre</strong></p>
-                <p>Le héros {st.session_state.username} a amassé {user_data.get('savings', 0):,.0f} FCFA dans son coffre légendaire !</p>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.info("ℹ️ Aucune planification pour le mois actuel. Veuillez créer un budget dans 'Planification mensuelle'.")
-    except Exception as e:
-        st.error(f"❌ Une erreur s'est produite : {str(e)}")
-        st.warning("Veuillez vérifier vos données utilisateur ou contacter l'administrateur.")
+        with col2:
+            if month_data.get('expenses'):
+                fig = px.bar(
+                    x=list(month_data['expenses'].keys()),
+                    y=list(month_data['expenses'].values()),
+                    title="Dépenses par Catégorie",
+                    color=list(month_data['expenses'].values()),
+                    color_continuous_scale="RdYlBu_r"
+                )
+                fig.update_layout(showlegend=False, height=400)
+                st.plotly_chart(fig, use_container_width=True)
 
 def planning_page():
-    user_data = budget_manager.get_user_data(st.session_state.username)
-    apply_theme(user_data.get('theme', 'Clair'))
     st.markdown('<div class="main-header"><h1>📋 Planification Mensuelle</h1></div>', unsafe_allow_html=True)
     
+    user_data = budget_manager.get_user_data(st.session_state.username)
     current_month = get_current_month_key()
     month_name = datetime.now().strftime("%B %Y")
     
     st.markdown(f"### 📅 Planification pour {month_name}")
     
     if current_month in user_data.get('months', {}):
-        st.markdown('<div class="warning-alert">⚠️ Vous avez déjà une planification pour ce mois.</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="warning-alert">
+            ⚠️ Vous avez déjà une planification pour ce mois. Vous pouvez la modifier ci-dessous.
+        </div>
+        """, unsafe_allow_html=True)
         existing_budget = user_data['months'][current_month].get('budget', {})
     else:
         existing_budget = {}
@@ -445,22 +336,25 @@ def planning_page():
                 }
             
             user_data['months'][current_month]['budget'] = budget
-            user_data['points'] = user_data.get('points', 0) + 50  # Récompense pour planification
             budget_manager.update_user_data(st.session_state.username, user_data)
-            st.markdown('<div class="success-alert">✅ Planification sauvegardée ! +50 Pièces d’Or</div>', unsafe_allow_html=True)
+            
+            st.markdown("""
+            <div class="success-alert">
+                ✅ Planification sauvegardée avec succès!
+            </div>
+            """, unsafe_allow_html=True)
             st.rerun()
         else:
             st.error("❌ Veuillez définir au moins un budget pour une catégorie")
 
 def add_expense_page():
-    user_data = budget_manager.get_user_data(st.session_state.username)
-    apply_theme(user_data.get('theme', 'Clair'))
     st.markdown('<div class="main-header"><h1>💸 Ajouter une Dépense</h1></div>', unsafe_allow_html=True)
     
+    user_data = budget_manager.get_user_data(st.session_state.username)
     current_month = get_current_month_key()
     
     if current_month not in user_data.get('months', {}):
-        st.warning("⚠️ Créez d'abord une planification mensuelle.")
+        st.warning("⚠️ Veuillez d'abord créer une planification pour ce mois dans la section 'Planification mensuelle'.")
         return
     
     st.markdown('<div class="expense-form">', unsafe_allow_html=True)
@@ -498,32 +392,35 @@ def add_expense_page():
                 'timestamp': datetime.now().isoformat()
             })
             
-            user_data['points'] = user_data.get('points', 0) + 10  # Récompense pour ajout
             budget_manager.update_user_data(st.session_state.username, user_data)
             
-            st.markdown('<div class="success-alert">✅ Dépense ajoutée ! +10 Pièces d’Or</div>', unsafe_allow_html=True)
+            st.markdown("""
+            <div class="success-alert">
+                ✅ Dépense ajoutée avec succès!
+            </div>
+            """, unsafe_allow_html=True)
             st.rerun()
         else:
-            st.error("❌ Veuillez remplir tous les champs")
+            st.error("❌ Veuillez remplir tous les champs avec des valeurs valides")
 
 def manage_income_page():
+    st.markdown('<div class="main-header"><h1>💰 Gérer les Entrées d\'Argent</h1></div>', unsafe_allow_html=True)
+    
     user_data = budget_manager.get_user_data(st.session_state.username)
-    apply_theme(user_data.get('theme', 'Clair'))
-    st.markdown('<div class="main-header"><h1>💰 Gérer les Entrées</h1></div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns([1, 2])
     
     with col1:
-        st.markdown("""
-        <div class="treasure-chest">
-            <h3 style="color: #d4a017; margin: 0;">💰 Petit Coffre</h3>
-            <h2 style="margin: 0; color: white;">{:,.0f} FCFA</h2>
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3 style="color: #28a745; margin: 0;">💰 Petit Coffre</h3>
+            <h2 style="margin: 0;">{user_data.get('savings', 0):,.0f} FCFA</h2>
         </div>
-        """.format(user_data.get('savings', 0)), unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    tab1, tab2, tab3 = st.tabs(["➕ Ajouter une entrée", "📊 Répartir l'argent", "🏦 Connexion Bancaire"])
+    tab1, tab2 = st.tabs(["➕ Ajouter une entrée", "📊 Répartir l'argent"])
     
     with tab1:
         st.markdown('<div class="expense-form">', unsafe_allow_html=True)
@@ -534,9 +431,13 @@ def manage_income_page():
         if st.button("💰 Ajouter au petit coffre"):
             if income_amount > 0:
                 user_data['savings'] = user_data.get('savings', 0) + income_amount
-                user_data['points'] = user_data.get('points', 0) + 20
                 budget_manager.update_user_data(st.session_state.username, user_data)
-                st.markdown('<div class="success-alert">✅ Entrée ajoutée ! +20 Pièces d’Or</div>', unsafe_allow_html=True)
+                
+                st.markdown("""
+                <div class="success-alert">
+                    ✅ Entrée ajoutée au petit coffre!
+                </div>
+                """, unsafe_allow_html=True)
                 st.rerun()
         
         st.markdown('</div>', unsafe_allow_html=True)
@@ -576,33 +477,30 @@ def manage_income_page():
                             month_data['budget'][category] += amount
                     
                     user_data['savings'] -= total_allocation
-                    user_data['points'] = user_data.get('points', 0) + 30
                     budget_manager.update_user_data(st.session_state.username, user_data)
-                    st.markdown('<div class="success-alert">✅ Répartition effectuée ! +30 Pièces d’Or</div>', unsafe_allow_html=True)
+                    
+                    st.markdown("""
+                    <div class="success-alert">
+                        ✅ Répartition effectuée avec succès!
+                    </div>
+                    """, unsafe_allow_html=True)
                     st.rerun()
                 else:
-                    st.error("❌ Le montant total dépasse le montant disponible")
+                    st.error("❌ Le montant total dépasse le montant disponible dans le coffre")
             
             st.markdown('</div>', unsafe_allow_html=True)
         else:
-            st.info("ℹ️ Créez une planification mensuelle et ajoutez de l'argent au coffre")
-    
-    with tab3:
-        st.markdown('<div class="expense-form"><h3>🏦 Connexion Bancaire</h3></div>', unsafe_allow_html=True)
-        bank_api_key = st.text_input("🔑 Clé API bancaire", type="password")
-        if st.button("🔗 Connecter"):
-            st.success("✅ Compte bancaire connecté (simulation) !")
+            st.info("ℹ️ Créez d'abord une planification mensuelle et ajoutez de l'argent au petit coffre")
 
 def monthly_tracking_page():
-    user_data = budget_manager.get_user_data(st.session_state.username)
-    apply_theme(user_data.get('theme', 'Clair'))
     st.markdown('<div class="main-header"><h1>📈 Suivi du Mois Actuel</h1></div>', unsafe_allow_html=True)
     
+    user_data = budget_manager.get_user_data(st.session_state.username)
     current_month = get_current_month_key()
     month_name = datetime.now().strftime("%B %Y")
     
     if current_month not in user_data.get('months', {}):
-        st.warning("⚠️ Aucune planification pour ce mois.")
+        st.warning("⚠️ Aucune planification trouvée pour ce mois. Créez d'abord votre planification mensuelle.")
         return
     
     month_data = user_data['months'][current_month]
@@ -611,6 +509,7 @@ def monthly_tracking_page():
     
     st.markdown(f"### 📅 Suivi pour {month_name}")
     
+    # Tableau de suivi
     tracking_data = []
     for category in get_categories():
         budgeted = budget.get(category, 0)
@@ -641,8 +540,9 @@ def monthly_tracking_page():
             'Status': status
         })
     
+    # Affichage sous forme de cartes
     for data in tracking_data:
-        if data['Budget'] != "0 FCFA":
+        if data['Budget'] != "0 FCFA":  # N'afficher que les catégories avec budget
             category = data['Catégorie']
             budgeted = budget.get(category, 0)
             spent = expenses.get(category, 0)
@@ -672,6 +572,7 @@ def monthly_tracking_page():
             </div>
             """, unsafe_allow_html=True)
     
+    # Historique des dépenses récentes
     if month_data.get('expense_details'):
         st.markdown("---")
         st.markdown("### 📋 Dépenses Récentes")
@@ -691,16 +592,16 @@ def monthly_tracking_page():
             """, unsafe_allow_html=True)
 
 def history_page():
-    user_data = budget_manager.get_user_data(st.session_state.username)
-    apply_theme(user_data.get('theme', 'Clair'))
     st.markdown('<div class="main-header"><h1>📚 Historique des Mois</h1></div>', unsafe_allow_html=True)
     
+    user_data = budget_manager.get_user_data(st.session_state.username)
     months = user_data.get('months', {})
     
     if not months:
-        st.info("ℹ️ Aucun historique disponible.")
+        st.info("ℹ️ Aucun historique disponible. Commencez par créer votre première planification mensuelle.")
         return
     
+    # Sélecteur de mois
     month_options = {}
     for month_key in sorted(months.keys(), reverse=True):
         try:
@@ -721,6 +622,7 @@ def history_page():
     budget = month_data.get('budget', {})
     expenses = month_data.get('expenses', {})
     
+    # Résumé du mois
     total_budget = sum(budget.values())
     total_spent = sum(expenses.values())
     difference = total_budget - total_spent
@@ -762,6 +664,10 @@ def history_page():
         </div>
         """.format(percentage), unsafe_allow_html=True)
     
+    # Détails par catégorie
+    st.markdown("---")
+    st.markdown("### 📊 Détails par Catégorie")
+    
     col1, col2 = st.columns(2)
     
     with col1:
@@ -772,6 +678,7 @@ def history_page():
                 title="Budget vs Dépenses",
                 color_discrete_sequence=['#667eea']
             )
+            
             if expenses:
                 fig.add_bar(
                     x=list(expenses.keys()),
@@ -779,6 +686,7 @@ def history_page():
                     name="Dépenses",
                     marker_color='#ffc107'
                 )
+            
             fig.update_layout(height=400, showlegend=True)
             st.plotly_chart(fig, use_container_width=True)
     
@@ -793,11 +701,12 @@ def history_page():
             fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True)
     
+    # Détail des transactions
     if month_data.get('expense_details'):
         st.markdown("---")
         st.markdown("### 📋 Détail des Transactions")
         
-        expense_details = month_data.get('expense_details', [])
+        expense_details = month_data['expense_details']
         df = pd.DataFrame(expense_details)
         
         if not df.empty:
@@ -814,189 +723,80 @@ def history_page():
                 use_container_width=True
             )
 
-def quests_page():
-    user_data = budget_manager.get_user_data(st.session_state.username)
-    apply_theme(user_data.get('theme', 'Clair'))
-    st.markdown('<div class="main-header"><h1>⚔️ Quêtes Financières</h1></div>', unsafe_allow_html=True)
-    
-    quests = [
-        {"name": "Épargne Héroïque", "goal": "Ajouter 50 000 FCFA au Petit Coffre", "progress": user_data.get('savings', 0) / 50000},
-        {"name": "Maîtrise Alimentaire", "goal": "Réduire les dépenses Nourriture de 10%", "progress": 0.4}
-    ]
-    
-    for quest in quests:
-        progress = min(quest['progress'], 1.0)
-        if progress >= 1.0 and f"quest_{quest['name'].lower().replace(' ', '_')}" not in user_data.get('achievements', {}):
-            user_data['achievements'][f"quest_{quest['name'].lower().replace(' ', '_')}"] = {
-                'name': quest['name'],
-                'date': datetime.now().isoformat()
-            }
-            user_data['points'] = user_data.get('points', 0) + 100
-            budget_manager.update_user_data(st.session_state.username, user_data)
-            st.balloons()
-            st.markdown(f'<div class="success-alert">🎉 Quête complétée : {quest["name"]} ! +100 Pièces d’Or</div>', unsafe_allow_html=True)
-        
-        st.markdown(f"""
-        <div class="budget-card">
-            <h3>{quest['name']}</h3>
-            <p>{quest['goal']}</p>
-            <div style="background: #e9ecef; border-radius: 10px; height: 10px;">
-                <div style="background: #28a745; height: 100%; width: {progress*100}%; border-radius: 10px;"></div>
-            </div>
-            <p>{progress*100:.1f}% complété</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-def advisor_page():
-    user_data = budget_manager.get_user_data(st.session_state.username)
-    apply_theme(user_data.get('theme', 'Clair'))
-    st.markdown('<div class="main-header"><h1>🧙‍♂️ Conseiller Financier</h1></div>', unsafe_allow_html=True)
-    
-    current_month = get_current_month_key()
-    month_data = user_data['months'].get(current_month, {})
-    expenses = month_data.get('expenses', {})
-    budget = month_data.get('budget', {})
-    
-    st.markdown("### 🧙‍♂️ Conseils du Sage Financier")
-    tips = []
-    for category in expenses:
-        if category in budget and expenses[category] / budget[category] > 0.8:
-            tips.append(f"⚠️ Attention à vos dépenses en {category} ! Essayez de réduire les sorties ou d'acheter en gros.")
-    
-    if tips:
-        for tip in tips:
-            st.markdown(f'<div class="warning-alert">{tip}</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="success-alert">👍 Vous gérez bien votre budget ! Continuez ainsi !</div>', unsafe_allow_html=True)
-    
-    st.markdown("### 🔮 Prédictions des Dépenses")
-    months = user_data.get('months', {})
-    if len(months) >= 2:
-        categories = get_categories()
-        predictions = {cat: 0 for cat in categories}
-        count = 0
-        
-        for month_data in months.values():
-            for cat in categories:
-                predictions[cat] += month_data.get('expenses', {}).get(cat, 0)
-            count += 1
-        
-        for cat in predictions:
-            predictions[cat] = predictions[cat] / count if count > 0 else 0
-        
-        for cat, amount in predictions.items():
-            if amount > 0:
-                st.markdown(f"📊 {cat}: environ {amount:,.0f} FCFA attendu ce mois-ci")
-    else:
-        st.info("ℹ️ Pas assez de données pour les prédictions.")
-
-def academy_page():
-    user_data = budget_manager.get_user_data(st.session_state.username)
-    apply_theme(user_data.get('theme', 'Clair'))
-    st.markdown('<div class="main-header"><h1>🏫 Académie Financière</h1></div>', unsafe_allow_html=True)
-    
-    st.markdown("### 📚 Leçons")
-    lessons = [
-        {"title": "Les bases de l'épargne", "content": "Épargnez 10% de vos revenus chaque mois pour constituer un fonds d'urgence."},
-        {"title": "Gérer les dettes", "content": "Priorisez le remboursement des dettes à taux d'intérêt élevé."}
-    ]
-    
-    for lesson in lessons:
-        with st.expander(lesson['title']):
-            st.write(lesson['content'])
-    
-    st.markdown("### 🧠 Quiz Financier")
-    question = "Quel est le meilleur moyen d'épargner ?"
-    options = ["Dépenser tout immédiatement", "Épargner 10% chaque mois", "Ne rien épargner"]
-    answer = st.radio(question, options)
-    if st.button("Vérifier"):
-        if answer == "Épargner 10% chaque mois":
-            user_data['points'] = user_data.get('points', 0) + 20
-            budget_manager.update_user_data(st.session_state.username, user_data)
-            st.success("🎉 Correct ! +20 Pièces d’Or")
-        else:
-            st.error("❌ Essayez encore !")
-
 def settings_page():
-    user_data = budget_manager.get_user_data(st.session_state.username)
-    apply_theme(user_data.get('theme', 'Clair'))
     st.markdown('<div class="main-header"><h1>⚙️ Paramètres</h1></div>', unsafe_allow_html=True)
     
-    tab1, tab2, tab3, tab4 = st.tabs(["👤 Profil", "🔄 Gestion des Données", "📊 Statistiques", "🎨 Personnalisation"])
+    user_data = budget_manager.get_user_data(st.session_state.username)
+    
+    tab1, tab2, tab3 = st.tabs(["👤 Profil", "🔄 Gestion des Données", "📊 Statistiques"])
     
     with tab1:
         st.markdown("### 👤 Informations du Profil")
         st.info(f"👤 Utilisateur: {st.session_state.username}")
         st.info(f"💰 Petit Coffre: {user_data.get('savings', 0):,.0f} FCFA")
-        st.info(f"🌟 Pièces d’Or: {user_data.get('points', 0)}")
-        months_count = len(user_data.get('months', {}))
-        st.info(f"📅 Mois gérés: {months_count}")
         
-        st.markdown("### 🏆 Réalisations")
-        for ach_id, ach in user_data.get('achievements', {}).items():
-            st.markdown(f"🏅 {ach['name']} - Obtenu le {ach['date'][:10]}")
+        months_count = len(user_data.get('months', {}))
+        st.info(f"📅 Nombre de mois gérés: {months_count}")
+        
+        if st.button("🔄 Changer de mot de passe"):
+            st.info("Cette fonctionnalité sera disponible dans une prochaine version.")
     
     with tab2:
         st.markdown("### 🔄 Gestion des Données")
+        
         col1, col2 = st.columns(2)
         
         with col1:
             if st.button("📥 Exporter les données", use_container_width=True):
                 data_json = json.dumps(user_data, indent=2, ensure_ascii=False)
                 st.download_button(
-                    label="💾 Télécharger JSON",
+                    label="💾 Télécharger le fichier JSON",
                     data=data_json,
-                    file_name=f"budget_{st.session_state.username}_{datetime.now().strftime('%Y%m%d')}.json",
+                    file_name=f"budget_data_{st.session_state.username}_{datetime.now().strftime('%Y%m%d')}.json",
                     mime="application/json"
                 )
         
         with col2:
-            if st.button("📤 Partager votre progrès"):
-                img = Image.new('RGB', (400, 200), color='#667eea')
-                draw = ImageDraw.Draw(img)
-                draw.text((20, 20), f"Budget de {st.session_state.username} - {datetime.now().strftime('%B %Y')}", fill='white')
-                draw.text((20, 60), f"Petit Coffre: {user_data.get('savings', 0):,.0f} FCFA", fill='white')
-                draw.text((20, 100), f"Pièces d’Or: {user_data.get('points', 0)}", fill='white')
-                img.save("budget_share.png")
-                st.image("budget_share.png")
-                with open("budget_share.png", "rb") as file:
-                    st.download_button("📤 Télécharger l'image", file, file_name="budget_share.png")
+            if st.button("🗑️ Réinitialiser le petit coffre", use_container_width=True):
+                if st.session_state.get('confirm_reset_savings'):
+                    user_data['savings'] = 0
+                    budget_manager.update_user_data(st.session_state.username, user_data)
+                    st.session_state['confirm_reset_savings'] = False
+                    st.success("✅ Petit coffre réinitialisé!")
+                    st.rerun()
+                else:
+                    st.session_state['confirm_reset_savings'] = True
+                    st.warning("⚠️ Cliquez à nouveau pour confirmer")
         
         st.markdown("---")
         st.markdown("#### 🗑️ Zone Dangereuse")
-        if st.button("🗑️ Réinitialiser le petit coffre", type="secondary"):
-            if st.session_state.get('confirm_reset_savings'):
-                user_data['savings'] = 0
-                budget_manager.update_user_data(st.session_state.username, user_data)
-                st.session_state['confirm_reset_savings'] = False
-                st.success("✅ Petit coffre réinitialisé !")
-                st.rerun()
-            else:
-                st.session_state['confirm_reset_savings'] = True
-                st.warning("⚠️ Cliquez à nouveau pour confirmer")
         
         if st.button("💥 Supprimer toutes les données", type="secondary"):
             if st.session_state.get('confirm_delete_all'):
-                user_data = {'months': {}, 'savings': 0, 'achievements': {}, 'avatar': 'Chevalier', 'points': 0, 'theme': 'Clair'}
+                user_data = {'months': {}, 'savings': 0}
                 budget_manager.update_user_data(st.session_state.username, user_data)
                 st.session_state['confirm_delete_all'] = False
-                st.success("✅ Données supprimées !")
+                st.success("✅ Toutes les données ont été supprimées!")
                 st.rerun()
             else:
                 st.session_state['confirm_delete_all'] = True
-                st.error("⚠️ Action irréversible ! Cliquez à nouveau pour confirmer.")
+                st.error("⚠️ ATTENTION: Cette action est irréversible! Cliquez à nouveau pour confirmer.")
     
     with tab3:
         st.markdown("### 📊 Statistiques Générales")
+        
         months = user_data.get('months', {})
         if months:
+            # Calcul des statistiques
             total_months = len(months)
             total_budgets = []
             total_expenses = []
             
             for month_data in months.values():
-                total_budgets.append(sum(month_data.get('budget', {}).values()))
-                total_expenses.append(sum(month_data.get('expenses', {}).values()))
+                budget = month_data.get('budget', {})
+                expenses = month_data.get('expenses', {})
+                total_budgets.append(sum(budget.values()))
+                total_expenses.append(sum(expenses.values()))
             
             avg_budget = sum(total_budgets) / len(total_budgets) if total_budgets else 0
             avg_expenses = sum(total_expenses) / len(total_expenses) if total_expenses else 0
@@ -1011,6 +811,7 @@ def settings_page():
                     <h3 style="margin: 0;">{}</h3>
                 </div>
                 """.format(total_months), unsafe_allow_html=True)
+                
                 st.markdown("""
                 <div class="metric-card">
                     <h4 style="color: #28a745; margin: 0;">💰 Budget Moyen</h4>
@@ -1025,6 +826,7 @@ def settings_page():
                     <h3 style="margin: 0;">{:,.0f} FCFA</h3>
                 </div>
                 """.format(avg_expenses), unsafe_allow_html=True)
+                
                 color = "#28a745" if total_savings >= 0 else "#dc3545"
                 st.markdown("""
                 <div class="metric-card">
@@ -1033,6 +835,7 @@ def settings_page():
                 </div>
                 """.format(color, color, total_savings), unsafe_allow_html=True)
             
+            # Graphique d'évolution
             if len(months) > 1:
                 months_sorted = sorted(months.items())
                 month_names = []
@@ -1050,6 +853,7 @@ def settings_page():
                 
                 if month_names:
                     fig = go.Figure()
+                    
                     fig.add_trace(go.Scatter(
                         x=month_names,
                         y=budgets,
@@ -1057,6 +861,7 @@ def settings_page():
                         name='Budget',
                         line=dict(color='#667eea', width=3)
                     ))
+                    
                     fig.add_trace(go.Scatter(
                         x=month_names,
                         y=expenses,
@@ -1064,36 +869,19 @@ def settings_page():
                         name='Dépenses',
                         line=dict(color='#ffc107', width=3)
                     ))
+                    
                     fig.update_layout(
                         title="Évolution Budget vs Dépenses",
                         xaxis_title="Mois",
                         yaxis_title="Montant (FCFA)",
                         height=400
                     )
+                    
                     st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("ℹ️ Aucune donnée pour les statistiques.")
-    
-    with tab4:
-        st.markdown("### 🎨 Personnalisation")
-        avatars = ["Chevalier", "Astronaute", "Dragon", "Sorcier"]
-        selected_avatar = st.selectbox("🎭 Avatar", avatars, index=avatars.index(user_data.get('avatar', 'Chevalier')))
-        user_data['avatar'] = selected_avatar
-        
-        themes = ["Clair", "Sombre", "Fantasy"]
-        selected_theme = st.selectbox("🎨 Thème", themes, index=themes.index(user_data.get('theme', 'Clair')))
-        user_data['theme'] = selected_theme
-        
-        budget_manager.update_user_data(st.session_state.username, user_data)
-        
-        st.markdown("### 🌌 Réalité Augmentée (Bientôt Disponible)")
-        st.markdown("""
-        <div class="budget-card">
-            <h3>🌌 Visualisez votre budget en AR !</h3>
-            <p>Bientôt : Découvrez votre Petit Coffre en 3D dans votre environnement !</p>
-        </div>
-        """, unsafe_allow_html=True)
+            st.info("ℹ️ Aucune donnée disponible pour les statistiques.")
 
+# Fonction principale
 def main():
     if 'logged_in' not in st.session_state:
         st.session_state.logged_in = False
@@ -1115,15 +903,10 @@ def main():
             monthly_tracking_page()
         elif page == "history":
             history_page()
-        elif page == "quests":
-            quests_page()
-        elif page == "advisor":
-            advisor_page()
-        elif page == "academy":
-            academy_page()
         elif page == "settings":
             settings_page()
 
+# Initialisation du gestionnaire de budget
 budget_manager = BudgetManager()
 
 if __name__ == "__main__":
