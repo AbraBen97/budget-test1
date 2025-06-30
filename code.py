@@ -287,105 +287,111 @@ def apply_theme(theme):
         """, unsafe_allow_html=True)
 
 def dashboard_page():
-    user_data = budget_manager.get_user_data(st.session_state.username)
-    apply_theme142(user_data.get('theme', 'Clair'))
-    st.markdown('<div class="main-header"><h1>📊 Tableau de Bord Épique</h1></div>', unsafe_allow_html=True)
-    
-    update_achievements(st.session_state.username, user_data)
-    current_month = get_current_month_key()
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.markdown("""
-        <div class="treasure-chest">
-            <h3 style="color: #d4a017; margin: 0;">💰 Petit Coffre</h3>
-            <h2 style="margin: 0; color: white;">{:,.0f} FCFA</h2>
-        </div>
-        """.format(user_data.get('savings', 0)), unsafe_allow_html=True)
-    
-    if current_month in user_data.get('months', {}):
-        month_data = user_data['months'][current_month]
-        total_budget = sum(month_data.get('budget', {}).values())
-        total_spent = sum(month_data.get('expenses', {}).values())
+    try:
+        user_data = budget_manager.get_user_data(st.session_state.username)
+        apply_theme(user_data.get('theme', 'Clair'))
+        st.markdown('<div class="main-header"><h1>📊 Tableau de Bord Épique</h1></div>', unsafe_allow_html=True)
         
-        with col2:
-            st.markdown("""
-            <div class="metric-card">
-                <h3 style="color: #28a745; margin: 0;">📈 Budget Total</h3>
-                <h2 style="margin: 0;">{:,.0f} FCFA</h2>
-            </div>
-            """.format(total_budget), unsafe_allow_html=True)
+        update_achievements(st.session_state.username, user_data)
+        current_month = get_current_month_key()
         
-        with col3:
-            st.markdown("""
-            <div class="metric-card">
-                <h3 style="color: #ffc107; margin: 0;">💸 Dépenses</h3>
-                <h2 style="margin: 0;">{:,.0f} FCFA</h2>
-            </div>
-            """.format(total_spent), unsafe_allow_html=True)
-        
-        with col4:
-            remaining = total_budget - total_spent
-            color = "#28a745" if remaining >= 0 else "#dc3545"
-            st.markdown("""
-            <div class="metric-card">
-                <h3 style="color: {}; margin: 0;">💎 Reste</h3>
-                <h2 style="margin: 0; color: {}">{:,.0f} FCFA</h2>
-            </div>
-            """.format(color, color, remaining), unsafe_allow_html=True)
-        
-        # Graphiques
-        col1, col2 = st.columns(2)
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            if month_data.get('budget'):
-                fig = go.Figure(data=[
-                    go.Scatter3d(
-                        x=list(month_data['budget'].keys()),
-                        y=[datetime.now().month] * len(month_data['budget']),
-                        z=list(month_data['budget'].values()),
-                        mode='markers+text',
-                        marker=dict(size=12, color=list(month_data['budget'].values()), colorscale='Viridis'),
-                        text=list(month_data['budget'].keys())
+            st.markdown("""
+            <div class="treasure-chest">
+                <h3 style="color: #d4a017; margin: 0;">💰 Petit Coffre</h3>
+                <h2 style="margin: 0; color: white;">{:,.0f} FCFA</h2>
+            </div>
+            """.format(user_data.get('savings', 0)), unsafe_allow_html=True)
+        
+        if current_month in user_data.get('months', {}):
+            month_data = user_data['months'][current_month]
+            total_budget = sum(month_data.get('budget', {}).values())
+            total_spent = sum(month_data.get('expenses', {}).values())
+            
+            with col2:
+                st.markdown("""
+                <div class="metric-card">
+                    <h3 style="color: #28a745; margin: 0;">📈 Budget Total</h3>
+                    <h2 style="margin: 0;">{:,.0f} FCFA</h2>
+                </div>
+                """.format(total_budget), unsafe_allow_html=True)
+            
+            with col3:
+                st.markdown("""
+                <div class="metric-card">
+                    <h3 style="color: #ffc107; margin: 0;">💸 Dépenses</h3>
+                    <h2 style="margin: 0;">{:,.0f} FCFA</h2>
+                </div>
+                """.format(total_spent), unsafe_allow_html=True)
+            
+            with col4:
+                remaining = total_budget - total_spent
+                color = "#28a745" if remaining >= 0 else "#dc3545"
+                st.markdown("""
+                <div class="metric-card">
+                    <h3 style="color: {}; margin: 0;">💎 Reste</h3>
+                    <h2 style="margin: 0; color: {}">{:,.0f} FCFA</h2>
+                </div>
+                """.format(color, color, remaining), unsafe_allow_html=True)
+            
+            # Graphiques
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if month_data.get('budget'):
+                    fig = go.Figure(data=[
+                        go.Scatter3d(
+                            x=list(month_data['budget'].keys()),
+                            y=[datetime.now().month] * len(month_data['budget']),
+                            z=list(month_data['budget'].values()),
+                            mode='markers+text',
+                            marker=dict(size=12, color=list(month_data['budget'].values()), colorscale='Viridis'),
+                            text=list(month_data['budget'].keys())
+                        )
+                    ])
+                    fig.update_layout(
+                        title="🌍 Budget 3D",
+                        scene=dict(xaxis_title="Catégorie", yaxis_title="Mois", zaxis_title="Montant (FCFA)"),
+                        height=400
                     )
-                ])
-                fig.update_layout(
-                    title="🌍 Budget 3D",
-                    scene=dict(xaxis_title="Catégorie", yaxis_title="Mois", zaxis_title="Montant (FCFA)"),
-                    height=400
-                )
-                st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            if month_data.get('expenses'):
-                fig = px.bar(
-                    x=list(month_data['expenses'].keys()),
-                    y=list(month_data['expenses'].values()),
-                    title="Dépenses par Catégorie",
-                    color=list(month_data['expenses'].values()),
-                    color_continuous_scale="RdYlBu_r"
-                )
-                fig.update_layout(showlegend=False, height=400)
-                st.plotly_chart(fig, use_container_width=True)
-        
-        # Conseiller financier
-        st.markdown("### 🧙‍♂️ Conseils du Sage Financier")
-        for category in month_data.get('expenses', {}):
-            if category in month_data.get('budget', {}) and month_data['expenses'][category] / month_data['budget'][category] > 0.8:
-                st.markdown(f'<div class="warning-alert">⚠️ Attention à vos dépenses en {category} ! Essayez de cuisiner à la maison ou d’acheter en gros.</div>', unsafe_allow_html=True)
-                break
+                    st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                if month_data.get('expenses'):
+                    fig = px.bar(
+                        x=list(month_data['expenses'].keys()),
+                        y=list(month_data['expenses'].values()),
+                        title="Dépenses par Catégorie",
+                        color=list(month_data['expenses'].values()),
+                        color_continuous_scale="RdYlBu_r"
+                    )
+                    fig.update_layout(showlegend=False, height=400)
+                    st.plotly_chart(fig, use_container_width=True)
+            
+            # Conseiller financier
+            st.markdown("### 🧙‍♂️ Conseils du Sage Financier")
+            for category in month_data.get('expenses', {}):
+                if category in month_data.get('budget', {}) and month_data['expenses'][category] / month_data['budget'][category] > 0.8:
+                    st.markdown(f'<div class="warning-alert">⚠️ Attention à vos dépenses en {category} ! Essayez de cuisiner à la maison ou d’acheter en gros.</div>', unsafe_allow_html=True)
+                    break
+            else:
+                st.markdown('<div class="success-alert">👍 Vous gérez bien votre budget ! Continuez ainsi !</div>', unsafe_allow_html=True)
+            
+            # Narration financière
+            st.markdown(f"""
+            <div class="budget-card">
+                <h3>📜 Votre Légende Financière</h3>
+                <p>Chapitre {len(user_data.get('months', {}))}: <strong>La Quête du Petit Coffre</strong></p>
+                <p>Le héros {st.session_state.username} a amassé {user_data.get('savings', 0):,.0f} FCFA dans son coffre légendaire !</p>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.markdown('<div class="success-alert">👍 Vous gérez bien votre budget ! Continuez ainsi !</div>', unsafe_allow_html=True)
-        
-        # Narration financière
-        st.markdown(f"""
-        <div class="budget-card">
-            <h3>📜 Votre Légende Financière</h3>
-            <p>Chapitre {len(user_data.get('months', {}))}: <strong>La Quête du Petit Coffre</strong></p>
-            <p>Le héros {st.session_state.username} a amassé {user_data.get('savings', 0):,.0f} FCFA dans son coffre légendaire !</p>
-        </div>
-        """, unsafe_allow_html=True)
+            st.info("ℹ️ Aucune planification pour le mois actuel. Veuillez créer un budget dans 'Planification mensuelle'.")
+    except Exception as e:
+        st.error(f"❌ Une erreur s'est produite : {str(e)}")
+        st.warning("Veuillez vérifier vos données utilisateur ou contacter l'administrateur.")
 
 def planning_page():
     user_data = budget_manager.get_user_data(st.session_state.username)
@@ -398,7 +404,7 @@ def planning_page():
     st.markdown(f"### 📅 Planification pour {month_name}")
     
     if current_month in user_data.get('months', {}):
-        st.markdown('<div classr="warning-alert">⚠️ Vous avez déjà une planification pour ce mois.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="warning-alert">⚠️ Vous avez déjà une planification pour ce mois.</div>', unsafe_allow_html=True)
         existing_budget = user_data['months'][current_month].get('budget', {})
     else:
         existing_budget = {}
