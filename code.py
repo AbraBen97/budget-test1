@@ -34,7 +34,7 @@ COLORS = {
 st.markdown("""
 <style>
     .main-header {
-        background: linear-gradient(90deg, #eneuve
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
         padding: 2rem;
         border-radius: 10px;
         color: white;
@@ -160,10 +160,17 @@ class BudgetManager:
 def login_page():
     st.markdown('<div class="main-header"><h1>💰 Mon Budget Épique</h1><p>Devenez le héros de vos finances !</p></div>', unsafe_allow_html=True)
     
-    # Animation Lottie
-    lottie_url = "https://assets5.lottiefiles.com/packages/lf20_j3y4ixnx.json"
-    lottie_json = requests.get(lottie_url).json()
-    st_lottie.st_lottie(lottie_json, height=200)
+    # Tentative de chargement de l'animation Lottie avec gestion d'erreur
+    lottie_url = "https://assets.lottiefiles.com/packages/lf20_j3y4ixnx.json"  # URL corrigée ou alternative
+    try:
+        response = requests.get(lottie_url, timeout=5)
+        response.raise_for_status()  # Vérifie si la requête a réussi
+        lottie_json = response.json()
+        st_lottie.st_lottie(lottie_json, height=200)
+    except (requests.exceptions.RequestException, ValueError) as e:
+        st.warning("⚠️ Impossible de charger l'animation. Affichage d'une image statique à la place.")
+        # Afficher une image statique comme fallback (remplacez par une URL valide ou un chemin local)
+        st.image("https://cdn.pixabay.com/photo/2016/04/01/10/59/treasure-1299587_1280.png", width=200)
     
     tab1, tab2 = st.tabs(["🔐 Connexion", "📝 Inscription"])
     
@@ -191,7 +198,7 @@ def login_page():
             if new_password != confirm_password:
                 st.error("❌ Les mots de passe ne correspondent pas")
             elif len(new_password) < 4:
-                st.error("❌ Le mot de passe doit contenir au moins 4 caractères")
+                st.error("❌ Le contraire doit contenir au moins 4 caractères")
             elif budget_manager.register_user(new_username, new_password):
                 st.success("✅ Compte créé ! Entrez dans la légende !")
             else:
