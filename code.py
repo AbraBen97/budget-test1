@@ -567,12 +567,13 @@ def monthly_tracking_page():
             
             progress = min((spent / budgeted) * 100, 100) if budgeted > 0 else 0
             
-            if progress <= 80:
-                color = "#28a745"
-            elif progress <= 100:
-                color = "#ffc107"
+            # Définir la couleur de la barre de progression
+            if spent > budgeted:
+                color = "#dc3545"  # Rouge pour dépassement
+            elif progress <= 80:
+                color = "#28a745"  # Vert pour budget bien géré
             else:
-                color = "#dc3545"
+                color = "#ffc107"  # Jaune pour approche de la limite
             
             st.markdown(f"""
             <div class="budget-card">
