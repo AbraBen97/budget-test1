@@ -1,0 +1,18 @@
+{
+  "abra": {
+    "months": {
+      "2025-07": {
+        "budget": {
+          "Transport": 1000,
+          "Nourriture": 1000,
+          "Factures": 1000,
+          "Santé": 1000,
+          "Divers": 1000
+        },
+        "expenses": {},
+        "expense_details": []
+      }
+    },
+    "savings": 0
+  }
+}
